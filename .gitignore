@@ -1,0 +1,11 @@
+.DS_Store
+switchlist.txt
+.idea/
+*.log
+*.xml
+*.pyc
+venv/
+*.png
+.metadata/
+static/img/
+__pycache__
