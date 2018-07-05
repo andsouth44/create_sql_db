@@ -357,33 +357,20 @@ def populate_tables():
 
                 for set in interface_sets:
 
-                    set_details = {'device_name': '{}_{}'.format(hostname.strip(), set.find('name').text)}
+                    set_name = set.find('name').text
+                    int_name = set.find('interface/name').text
 
-                    i = 1
-                    for units in set.iter('unit'):
-                        set_details['interface' + str(i)] = '{}_{}.{}'.format(hostname.strip(),
-                                                                              set.find('interface/name').text,
-                                                                              units.find('name').text)
-                        i = i + 1
+                    for unit in set.iter('unit'):
+                        unit_name = unit.find('name').text
+                        interface = '{}_{}.{}'.format(hostname.strip(), int_name, unit_name)
+                        try:
+                            cur.execute('update interfaces set interface_set = %s where device_int_unit = %s', (set_name, interface))
+                        except Exception as e:
+                            logger.warning('Error: {}'.format(e))
 
-                    logger.debug(set_details)
+                        logger.debug('{} {}_{}.{}'.format(set_name, hostname.strip(), int_name, unit_name))
 
-                    try:
-                        cur.execute('insert into interface_sets (device_name) values (%s)',
-                                    (set_details['device_name'],))
-                    except Exception as e:
-                        logger.warning('Error: {}'.format(e))
-
-                    db.commit()
-
-                    for k in set_details:
-                        if k[:9] in ('interface',):
-                            try:
-                                cur.execute('update interface_sets set {} = %s where device_name = %s'.format(k, ),
-                                            (set_details[k], set_details['device_name']))
-                            except Exception as e:
-                                logger.warning('Error: {}'.format(e))
-                            db.commit()
+                        db.commit()
 
             if config.find('routing-instances') is not None:
                 conf_ris = config.find('routing-instances')
@@ -430,26 +417,20 @@ def populate_tables():
                     except Exception as e:
                         logger.warning('Error: {}'.format(e))
 
+                    logger.debug(ri_details)
+
                     db.commit()
 
-                    i = 1
-                    for interfaces in item.findall('interface'):
-                        ri_details['interface' + str(i)] = '{}_{}'.format(hostname.strip(),
-                                                                          interfaces.find('name').text)
-                        i = i + 1
+                    for interface in item.findall('interface'):
+                        int_name = '{}_{}'.format(hostname.strip(), interface.find('name').text)
+                        try:
+                            cur.execute('update interfaces set routing_instance = %s where device_int_unit = %s', (item.find('name').text, int_name))
+                        except Exception as e:
+                            logger.warning('Error: {}'.format(e))
 
-                    for k in ri_details:
-                        if k[:9] in ('interface',):
-                            try:
-                                cur.execute(
-                                    'update routing_instances set {} = %s where instance_name = %s'.format(
-                                        k, ), (ri_details[k], ri_details['instance_name']))
-                            except Exception as e:
-                                logger.warning('Error: {}'.format(e))
+                        db.commit()
 
-                            db.commit()
-
-                    logger.debug(ri_details)
+                        logger.debug('{}_{}'.format(item.find('name').text, int_name))
 
             if config.find('bridge-domains') is not None:
                 bridge_domains = config.find('bridge-domains')
@@ -476,13 +457,6 @@ def populate_tables():
                     else:
                         bridge_details['vlan_id'] = None
 
-                    i = 1
-                    for ints in bridge.iter('interface'):
-                        bridge_details['interface' + str(i)] = '{}_{}'.format(hostname.strip(), ints.find('name').text)
-                        i = i + 1
-
-                    logger.debug(bridge_details)
-
                     try:
                         cur.execute(
                             'insert into bridge_domains (domain_name, description, type, vlan_id) values (%s, %s, %s, %s)',
@@ -491,17 +465,31 @@ def populate_tables():
                     except Exception as e:
                         logger.warning('Error: {}'.format(e))
 
+                    logger.debug(bridge_details)
+
                     db.commit()
 
-                    for k in bridge_details:
-                        if k[:9] in ('interface',):
-                            try:
-                                cur.execute(
-                                    'update bridge_domains set {} = %s where domain_name = %s'.format(k, ),
-                                    (bridge_details[k], bridge_details['domain_name']))
-                            except Exception as e:
-                                logger.warning('Error: {}'.format(e))
-                            db.commit()
+                    if bridge.find('routing-interface') is not None:
+                        int_name = '{}_{}'.format(hostname.strip(), bridge.find('routing-interface').text)
+                        try:
+                            cur.execute('update interfaces set bridge_domain = %s where device_int_unit = %s', (bridge.find('name').text, int_name))
+                        except Exception as e:
+                            logger.warning('Error: {}'.format(e))
+
+                        db.commit()
+
+                        logger.debug('{}_{}'.format(bridge.find('name').text, int_name))
+
+                    for int in bridge.iter('interface'):
+                        int_name = '{}_{}'.format(hostname.strip(), int.find('name').text)
+                        try:
+                            cur.execute('update interfaces set bridge_domain = %s where device_int_unit = %s', (bridge.find('name').text, int_name))
+                        except Exception as e:
+                            logger.warning('Error: {}'.format(e))
+
+                        db.commit()
+
+                        logger.debug('{}_{}'.format(bridge.find('name').text, int_name))
 
             if config.find('class-of-service/schedulers') is not None:
                 schedulers = config.findall('class-of-service/schedulers')
