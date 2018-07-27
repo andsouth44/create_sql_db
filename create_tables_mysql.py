@@ -15,7 +15,7 @@ cwd = os.path.dirname(os.path.abspath(__file__))
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 formatter = logging.Formatter('%(message)s:%(asctime)s:%(name)s')
-file_handler = logging.FileHandler('{}/conf_db.log'.format(cwd), mode='w')
+file_handler = logging.FileHandler('{}/sn_conf_db.log'.format(cwd), mode='w')
 file_handler.setLevel(logging.INFO)
 file_handler.setFormatter(formatter)
 stream_handler = logging.StreamHandler()
@@ -28,13 +28,13 @@ def create_tables():
     """ create tables in the mySQL database"""
     commands = (
         """
-        DROP DATABASE IF EXISTS configuration;
+        DROP DATABASE IF EXISTS supernetconfiguration;
         """,
         """
-        CREATE DATABASE configuration;
+        CREATE DATABASE supernetconfiguration;
         """,
         """
-        USE configuration;
+        USE supernetconfiguration;
         """,
         """
         CREATE TABLE interfaces (
@@ -48,16 +48,18 @@ def create_tables():
             ip VARCHAR(50) COLLATE utf8_bin NULL,
             interface_set VARCHAR(50) COLLATE utf8_bin NULL,
             routing_instance VARCHAR(50) COLLATE utf8_bin NULL,
-            bridge_domain VARCHAR(50) COLLATE utf8_bin NULL
+            bridge_domain VARCHAR(50) COLLATE utf8_bin NULL     
         )
         """,
         """
         CREATE TABLE routing_instances (
-            instance_name VARCHAR(50) COLLATE utf8_bin NOT NULL PRIMARY KEY,
+            instance_name VARCHAR(60) COLLATE utf8_bin NOT NULL PRIMARY KEY,
             type VARCHAR(50) COLLATE utf8_bin NULL,
             rd VARCHAR(50) COLLATE utf8_bin NULL,
             rt VARCHAR(50) COLLATE utf8_bin NULL,
-            protocol VARCHAR(50) COLLATE utf8_bin NULL
+            protocol VARCHAR(50) COLLATE utf8_bin NULL,
+            dhcp_forwarder1 VARCHAR(50) COLLATE utf8_bin NULL,
+            dhcp_forwarder2 VARCHAR(50) COLLATE utf8_bin NULL
         )
         """,
         """
@@ -117,7 +119,7 @@ def create_tables():
             FOREIGN KEY (forwarding_class7) REFERENCES forwarding_classes (name),
             FOREIGN KEY (scheduler7) REFERENCES schedulers (name),
             FOREIGN KEY (forwarding_class8) REFERENCES forwarding_classes (name),
-            FOREIGN KEY (scheduler8) REFERENCES schedulers (name)
+            FOREIGN KEY (scheduler8) REFERENCES schedulers (name)               
         )
         """,
         """
@@ -128,14 +130,14 @@ def create_tables():
             FOREIGN KEY (scheduler_map) REFERENCES scheduler_maps (name)
         )
         """,
-        """
+        """      
         CREATE TABLE cos_interface_sets (
             name VARCHAR(100) COLLATE utf8_bin PRIMARY KEY NOT NULL,
             traffic_control_profile VARCHAR(50) COLLATE utf8_bin NULL,
             FOREIGN KEY (traffic_control_profile) REFERENCES traffic_control_profiles (name)
         )
         """,
-        """
+        """      
         CREATE TABLE cos_interfaces (
             device_int_unit VARCHAR(100) COLLATE utf8_bin PRIMARY KEY NOT NULL,
             apply_group VARCHAR(50) COLLATE utf8_bin NULL,
